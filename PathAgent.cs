@@ -475,4 +475,38 @@ public class PathAgent : MonoBehaviour
             trailRenderer.endWidth = width;
         }
     }
+    
+    /// <summary>
+    /// Highlight this agent's trail (pulse effect)
+    /// </summary>
+    public void HighlightTrail(bool highlight)
+    {
+        if (trailRenderer != null && trailRenderer.material != null)
+        {
+            if (highlight)
+            {
+                // Increase emission for highlight effect
+                if (trailRenderer.material.HasProperty("_EmissionColor"))
+                {
+                    trailRenderer.material.SetColor("_EmissionColor", agentColor * 2f);
+                }
+                // Slightly increase width
+                float baseWidth = sharedState != null ? sharedState.masterLineWidth : 0.3f;
+                trailRenderer.startWidth = baseWidth * 1.5f;
+                trailRenderer.endWidth = baseWidth * 1.5f;
+            }
+            else
+            {
+                // Reset to normal
+                if (trailRenderer.material.HasProperty("_EmissionColor"))
+                {
+                    trailRenderer.material.SetColor("_EmissionColor", agentColor * 0.5f);
+                }
+                // Reset width
+                float baseWidth = sharedState != null ? sharedState.masterLineWidth : 0.3f;
+                trailRenderer.startWidth = baseWidth;
+                trailRenderer.endWidth = baseWidth;
+            }
+        }
+    }
 }

@@ -680,16 +680,23 @@ public class AgentPanelUI : MonoBehaviour
     {
         if (agent == null) return;
         
-        // Update toggles to reflect selection
+        // Update toggles to reflect selection and highlight trails
         for (int i = 0; i < agentCards.Count; i++)
         {
             if (agentCards[i].agent == agent)
             {
                 agentCards[i].selectToggle.SetIsOnWithoutNotify(true);
+                // Highlight selected agent's trail
+                agentCards[i].agent.HighlightTrail(true);
             }
             else
             {
                 agentCards[i].selectToggle.SetIsOnWithoutNotify(false);
+                // Un-highlight other trails
+                if (agentCards[i].agent != null)
+                {
+                    agentCards[i].agent.HighlightTrail(false);
+                }
             }
         }
     }
