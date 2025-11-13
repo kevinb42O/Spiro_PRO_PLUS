@@ -75,6 +75,7 @@ public class SpirographUIManager : MonoBehaviour
     public Dropdown agentSpawnModeDropdown;
     public MultiAgentManager multiAgentManager;
     public SharedPathState sharedPathState;
+    public AgentPanelUI agentPanelUI;
     
     [Header("UI State")]
     private GameObject controlPanel;
@@ -1311,6 +1312,14 @@ public class SpirographUIManager : MonoBehaviour
         hintGlow.effectColor = new Color(0.3f, 0.5f, 1f, 0.3f);
         hintGlow.effectDistance = new Vector2(0, 0);
         
+        // ============================================================
+        // AGENT PANEL (Bottom-Right)
+        // ============================================================
+        GameObject agentPanelUIObj = new GameObject("AgentPanelUI");
+        agentPanelUIObj.transform.SetParent(canvas.transform, false);
+        agentPanelUI = agentPanelUIObj.AddComponent<AgentPanelUI>();
+        agentPanelUI.CreatePanel(canvas);
+        
         #if UNITY_EDITOR
         UnityEditor.EditorUtility.SetDirty(this);
         UnityEditor.Selection.activeGameObject = canvasObj;
@@ -1318,6 +1327,7 @@ public class SpirographUIManager : MonoBehaviour
         
         Debug.Log("✓ Generated complete UI! Canvas selected in Hierarchy.");
         Debug.Log("✓ HIDE UI BUTTON: Top-right corner (always visible) - Press ENTER to toggle!");
+        Debug.Log("✓ Agent Panel: Bottom-right (shown when multi-agent mode enabled)");
         Debug.Log("✓ You can now customize colors, sizes, and positions.");
         Debug.Log("✓ Don't forget to assign 4 materials to SpirographRoller for the material buttons!");
         Debug.Log("✓ UI automatically connects to SpirographRoller, RotateParent, and CameraController.");
@@ -2442,6 +2452,18 @@ public class SpirographUIManager : MonoBehaviour
         // Link manager to shared state
         multiAgentManager.sharedState = sharedPathState;
         
+        // Find or create AgentPanelUI
+        if (agentPanelUI == null)
+        {
+            agentPanelUI = FindFirstObjectByType<AgentPanelUI>();
+        }
+        
+        // Link agent panel to manager
+        if (agentPanelUI != null)
+        {
+            agentPanelUI.agentManager = multiAgentManager;
+        }
+        
         // Connect Multi-Agent Toggle
         if (multiAgentToggle != null)
         {
@@ -2560,6 +2582,13 @@ public class SpirographUIManager : MonoBehaviour
                 multiAgentManager.EnableMultiAgentMode();
             }
             
+            // Show agent panel and populate with agents
+            if (agentPanelUI != null)
+            {
+                agentPanelUI.ShowPanel();
+                agentPanelUI.PopulateAgentList();
+            }
+            
             // Redirect sliders to control SharedPathState instead of activeRoller
             ConnectSlidersToSharedState();
         }
@@ -2569,6 +2598,12 @@ public class SpirographUIManager : MonoBehaviour
             if (multiAgentManager != null)
             {
                 multiAgentManager.DisableMultiAgentMode();
+            }
+            
+            // Hide agent panel
+            if (agentPanelUI != null)
+            {
+                agentPanelUI.HidePanel();
             }
             
             // Redirect sliders back to activeRoller
