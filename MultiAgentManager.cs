@@ -134,11 +134,30 @@ public class MultiAgentManager : MonoBehaviour
         // Clear existing agents first
         ClearAllAgents();
         
+        // Validate shared state
+        if (sharedState == null)
+        {
+            Debug.LogError("[MultiAgentManager] No SharedPathState assigned!");
+            return;
+        }
+        
         // Validate path points
         if (sharedState.pathPoints == null || sharedState.pathPoints.Length == 0)
         {
             Debug.LogError("[MultiAgentManager] No path points in SharedPathState!");
             return;
+        }
+        
+        // Validate agent count
+        if (agentCount < 1)
+        {
+            Debug.LogWarning("[MultiAgentManager] Agent count must be at least 1. Setting to 1.");
+            agentCount = 1;
+        }
+        if (agentCount > 16)
+        {
+            Debug.LogWarning("[MultiAgentManager] Agent count cannot exceed 16. Capping at 16.");
+            agentCount = 16;
         }
         
         // Spawn based on mode
@@ -288,7 +307,36 @@ public class MultiAgentManager : MonoBehaviour
         // Add to agents list
         agents.Add(agent);
         
+        // Add spawn animation (scale up from small)
+        agentObj.transform.localScale = Vector3.zero;
+        StartCoroutine(AnimateAgentSpawn(agentObj.transform));
+        
         return agent;
+    }
+    
+    /// <summary>
+    /// Animate agent spawning (scale up effect)
+    /// </summary>
+    System.Collections.IEnumerator AnimateAgentSpawn(Transform agentTransform)
+    {
+        Vector3 targetScale = Vector3.one * 0.4f; // Final scale for agent
+        float duration = 0.3f;
+        float elapsed = 0f;
+        
+        while (elapsed < duration && agentTransform != null)
+        {
+            elapsed += Time.deltaTime;
+            float t = elapsed / duration;
+            // Smooth ease out
+            float smoothT = 1f - Mathf.Pow(1f - t, 3f);
+            agentTransform.localScale = Vector3.Lerp(Vector3.zero, targetScale, smoothT);
+            yield return null;
+        }
+        
+        if (agentTransform != null)
+        {
+            agentTransform.localScale = targetScale;
+        }
     }
     
     /// <summary>

@@ -553,29 +553,48 @@ public class AgentPanelUI : MonoBehaviour
     {
         PathAgent agent = card.agent;
         
-        // Update status text and card color
-        switch (agent.status)
+        // Performance optimization: Only update if card is visible in viewport
+        if (!IsCardVisible(card))
+        {
+            return; // Skip update for cards outside viewport
+        }
+        
+        // Update status text and card color (only if changed to reduce UI updates)
+        PathAgent.AgentStatus currentStatus = agent.status;
+        string statusText = "";
+        Color statusColor = Color.white;
+        Color cardColor = AgentCard.idleColor;
+        
+        switch (currentStatus)
         {
             case PathAgent.AgentStatus.Idle:
-                card.statusText.text = "● Idle";
-                card.statusText.color = new Color(0.5f, 0.5f, 0.6f, 1f);
-                card.cardBackground.color = AgentCard.idleColor;
+                statusText = "● Idle";
+                statusColor = new Color(0.5f, 0.5f, 0.6f, 1f);
+                cardColor = AgentCard.idleColor;
                 break;
             case PathAgent.AgentStatus.Active:
-                card.statusText.text = "▶ Active";
-                card.statusText.color = new Color(0.3f, 0.8f, 0.4f, 1f);
-                card.cardBackground.color = AgentCard.activeColor;
+                statusText = "▶ Active";
+                statusColor = new Color(0.3f, 0.8f, 0.4f, 1f);
+                cardColor = AgentCard.activeColor;
                 break;
             case PathAgent.AgentStatus.Paused:
-                card.statusText.text = "⏸ Paused";
-                card.statusText.color = new Color(0.9f, 0.7f, 0.3f, 1f);
-                card.cardBackground.color = AgentCard.pausedColor;
+                statusText = "⏸ Paused";
+                statusColor = new Color(0.9f, 0.7f, 0.3f, 1f);
+                cardColor = AgentCard.pausedColor;
                 break;
             case PathAgent.AgentStatus.Completed:
-                card.statusText.text = "✓ Complete";
-                card.statusText.color = new Color(0.4f, 0.6f, 0.9f, 1f);
-                card.cardBackground.color = AgentCard.completedColor;
+                statusText = "✓ Complete";
+                statusColor = new Color(0.4f, 0.6f, 0.9f, 1f);
+                cardColor = AgentCard.completedColor;
                 break;
+        }
+        
+        // Only update if changed (dirty flag optimization)
+        if (card.statusText.text != statusText)
+        {
+            card.statusText.text = statusText;
+            card.statusText.color = statusColor;
+            card.cardBackground.color = cardColor;
         }
         
         // Update progress bar and text
@@ -592,6 +611,18 @@ public class AgentPanelUI : MonoBehaviour
         // Update stats text
         float speedMultiplier = agent.speedMultiplier;
         card.progressText.text = $"Progress: {(totalProgress * 100f):F1}% | Speed: {speedMultiplier:F2}x";
+    }
+    
+    /// <summary>
+    /// Check if card is visible in viewport (optimization)
+    /// </summary>
+    bool IsCardVisible(AgentCard card)
+    {
+        if (card.cardObject == null || agentListScrollRect == null) return true;
+        
+        // Simple check: if card has active GameObject, assume visible
+        // More complex viewport culling could be added here if needed
+        return card.cardObject.activeInHierarchy;
     }
     
     /// <summary>
@@ -688,6 +719,8 @@ public class AgentPanelUI : MonoBehaviour
                 agentCards[i].selectToggle.SetIsOnWithoutNotify(true);
                 // Highlight selected agent's trail
                 agentCards[i].agent.HighlightTrail(true);
+                // Pulse animation for selected card
+                StartCoroutine(PulseCardSelection(agentCards[i]));
             }
             else
             {
@@ -699,5 +732,45 @@ public class AgentPanelUI : MonoBehaviour
                 }
             }
         }
+    }
+    
+    /// <summary>
+    /// Pulse animation for selected agent card
+    /// </summary>
+    System.Collections.IEnumerator PulseCardSelection(AgentCard card)
+    {
+        if (card.cardObject == null) yield break;
+        
+        Outline outline = card.cardObject.GetComponent<Outline>();
+        if (outline == null) yield break;
+        
+        Color originalColor = outline.effectColor;
+        Color brightColor = new Color(0.5f, 0.8f, 1f, 0.8f);
+        
+        // Pulse once
+        float duration = 0.3f;
+        float elapsed = 0f;
+        
+        // Brighten
+        while (elapsed < duration)
+        {
+            elapsed += Time.deltaTime;
+            float t = elapsed / duration;
+            outline.effectColor = Color.Lerp(originalColor, brightColor, t);
+            yield return null;
+        }
+        
+        elapsed = 0f;
+        
+        // Dim back
+        while (elapsed < duration)
+        {
+            elapsed += Time.deltaTime;
+            float t = elapsed / duration;
+            outline.effectColor = Color.Lerp(brightColor, originalColor, t);
+            yield return null;
+        }
+        
+        outline.effectColor = originalColor;
     }
 }

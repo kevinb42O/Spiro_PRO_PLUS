@@ -132,7 +132,18 @@ public class PathAgent : MonoBehaviour
     
     void Update()
     {
-        if (sharedState == null) return;
+        // Null checks for safety
+        if (sharedState == null)
+        {
+            Debug.LogWarning($"[PathAgent] Agent {agentIndex}: SharedPathState is null!");
+            return;
+        }
+        
+        if (staticPathCache.Count == 0)
+        {
+            Debug.LogWarning($"[PathAgent] Agent {agentIndex}: Path cache is empty!");
+            return;
+        }
         
         // Check if we should be drawing
         if (status == AgentStatus.Idle || status == AgentStatus.Completed || isPaused)
