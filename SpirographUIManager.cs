@@ -67,6 +67,15 @@ public class SpirographUIManager : MonoBehaviour
     public Button generatePatternButton;
     public Button clearPatternsButton;
     
+    [Header("Multi-Agent System")]
+    public Toggle multiAgentToggle;
+    public Slider agentCountSlider;
+    public Text agentCountText;
+    public Dropdown agentColorModeDropdown;
+    public Dropdown agentSpawnModeDropdown;
+    public MultiAgentManager multiAgentManager;
+    public SharedPathState sharedPathState;
+    
     [Header("UI State")]
     private GameObject controlPanel;
     private bool isUIVisible = true;
@@ -128,6 +137,9 @@ public class SpirographUIManager : MonoBehaviour
         
         // Connect Pattern Generator
         ConnectPatternGenerator();
+        
+        // Connect Multi-Agent System
+        ConnectMultiAgentSystem();
         
         // Subscribe to PatternSpawner rotor change events
         SubscribeToPatternSpawner();
@@ -1021,7 +1033,111 @@ public class SpirographUIManager : MonoBehaviour
         clearPatternsButton = CreateModernButton(environmentSection.transform, "ClearPatternsButton", new Vector2(150, envYPos), new Vector2(140, 38), "✖ CLEAR ALL");
         Image clearImg = clearPatternsButton.GetComponent<Image>();
         clearImg.color = new Color(0.25f, 0.08f, 0.08f, 0.8f); // Red tint
-        envYPos -= 55;
+        envYPos -= 65;
+        
+        // ============================================================
+        // MULTI-AGENT SYSTEM CONTROLS
+        // ============================================================
+        
+        // Multi-Agent Mode Section Label
+        GameObject multiAgentLabelObj = new GameObject("MultiAgentLabel");
+        multiAgentLabelObj.transform.SetParent(environmentSection.transform, false);
+        RectTransform multiAgentLabelRect = multiAgentLabelObj.AddComponent<RectTransform>();
+        multiAgentLabelRect.anchorMin = new Vector2(0, 1);
+        multiAgentLabelRect.anchorMax = new Vector2(0, 1);
+        multiAgentLabelRect.pivot = new Vector2(0, 1);
+        multiAgentLabelRect.anchoredPosition = new Vector2(0, envYPos);
+        multiAgentLabelRect.sizeDelta = new Vector2(290, 20);
+        Text multiAgentLabel = multiAgentLabelObj.AddComponent<Text>();
+        multiAgentLabel.text = "Multi-Agent System:";
+        multiAgentLabel.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+        multiAgentLabel.fontSize = 12;
+        multiAgentLabel.fontStyle = FontStyle.Bold;
+        multiAgentLabel.color = new Color(0.7f, 0.85f, 1f, 0.9f);
+        multiAgentLabel.alignment = TextAnchor.MiddleLeft;
+        envYPos -= 28;
+        
+        // Multi-Agent Toggle
+        multiAgentToggle = CreateModernToggle(environmentSection.transform, "MultiAgentToggle", new Vector2(0, envYPos), "Enable Multi-Agent Mode");
+        envYPos -= 45;
+        
+        // Agent Count Slider (initially hidden)
+        GameObject agentCountContainer = new GameObject("AgentCountContainer");
+        agentCountContainer.transform.SetParent(environmentSection.transform, false);
+        RectTransform agentCountContainerRect = agentCountContainer.AddComponent<RectTransform>();
+        agentCountContainerRect.anchorMin = new Vector2(0, 1);
+        agentCountContainerRect.anchorMax = new Vector2(0, 1);
+        agentCountContainerRect.pivot = new Vector2(0, 1);
+        agentCountContainerRect.anchoredPosition = new Vector2(0, envYPos);
+        agentCountContainerRect.sizeDelta = new Vector2(290, 70);
+        agentCountContainer.SetActive(false); // Hidden until multi-agent enabled
+        
+        agentCountSlider = CreateModernSlider(agentCountContainer.transform, "AgentCountSlider", new Vector2(0, 0), 1f, 16f, 
+            4f, out agentCountText, "Agent Count", "4");
+        agentCountSlider.wholeNumbers = true;
+        envYPos -= 75;
+        
+        // Agent Color Mode Dropdown (initially hidden)
+        GameObject colorModeContainer = new GameObject("ColorModeContainer");
+        colorModeContainer.transform.SetParent(environmentSection.transform, false);
+        RectTransform colorModeContainerRect = colorModeContainer.AddComponent<RectTransform>();
+        colorModeContainerRect.anchorMin = new Vector2(0, 1);
+        colorModeContainerRect.anchorMax = new Vector2(0, 1);
+        colorModeContainerRect.pivot = new Vector2(0, 1);
+        colorModeContainerRect.anchoredPosition = new Vector2(0, envYPos);
+        colorModeContainerRect.sizeDelta = new Vector2(290, 70);
+        colorModeContainer.SetActive(false); // Hidden until multi-agent enabled
+        
+        GameObject colorModeLabelObj = new GameObject("ColorModeLabel");
+        colorModeLabelObj.transform.SetParent(colorModeContainer.transform, false);
+        RectTransform colorModeLabelRect = colorModeLabelObj.AddComponent<RectTransform>();
+        colorModeLabelRect.anchorMin = new Vector2(0, 1);
+        colorModeLabelRect.anchorMax = new Vector2(0, 1);
+        colorModeLabelRect.pivot = new Vector2(0, 1);
+        colorModeLabelRect.anchoredPosition = new Vector2(0, 0);
+        colorModeLabelRect.sizeDelta = new Vector2(290, 20);
+        Text colorModeLabel = colorModeLabelObj.AddComponent<Text>();
+        colorModeLabel.text = "Agent Color Mode:";
+        colorModeLabel.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+        colorModeLabel.fontSize = 11;
+        colorModeLabel.fontStyle = FontStyle.Bold;
+        colorModeLabel.color = new Color(0.6f, 0.75f, 0.9f, 0.85f);
+        colorModeLabel.alignment = TextAnchor.MiddleLeft;
+        
+        agentColorModeDropdown = CreateCompactDropdown(colorModeContainer.transform, "AgentColorModeDropdown", new Vector2(0, -25), 
+            new string[] { "Master", "Rainbow", "Individual", "Custom" });
+        envYPos -= 75;
+        
+        // Agent Spawn Mode Dropdown (initially hidden)
+        GameObject spawnModeContainer = new GameObject("SpawnModeContainer");
+        spawnModeContainer.transform.SetParent(environmentSection.transform, false);
+        RectTransform spawnModeContainerRect = spawnModeContainer.AddComponent<RectTransform>();
+        spawnModeContainerRect.anchorMin = new Vector2(0, 1);
+        spawnModeContainerRect.anchorMax = new Vector2(0, 1);
+        spawnModeContainerRect.pivot = new Vector2(0, 1);
+        spawnModeContainerRect.anchoredPosition = new Vector2(0, envYPos);
+        spawnModeContainerRect.sizeDelta = new Vector2(290, 70);
+        spawnModeContainer.SetActive(false); // Hidden until multi-agent enabled
+        
+        GameObject spawnModeLabelObj = new GameObject("SpawnModeLabel");
+        spawnModeLabelObj.transform.SetParent(spawnModeContainer.transform, false);
+        RectTransform spawnModeLabelRect = spawnModeLabelObj.AddComponent<RectTransform>();
+        spawnModeLabelRect.anchorMin = new Vector2(0, 1);
+        spawnModeLabelRect.anchorMax = new Vector2(0, 1);
+        spawnModeLabelRect.pivot = new Vector2(0, 1);
+        spawnModeLabelRect.anchoredPosition = new Vector2(0, 0);
+        spawnModeLabelRect.sizeDelta = new Vector2(290, 20);
+        Text spawnModeLabel = spawnModeLabelObj.AddComponent<Text>();
+        spawnModeLabel.text = "Spawn Mode:";
+        spawnModeLabel.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+        spawnModeLabel.fontSize = 11;
+        spawnModeLabel.fontStyle = FontStyle.Bold;
+        spawnModeLabel.color = new Color(0.6f, 0.75f, 0.9f, 0.85f);
+        spawnModeLabel.alignment = TextAnchor.MiddleLeft;
+        
+        agentSpawnModeDropdown = CreateCompactDropdown(spawnModeContainer.transform, "AgentSpawnModeDropdown", new Vector2(0, -25), 
+            new string[] { "Simultaneous", "Sequential", "Staggered", "Competitive" });
+        envYPos -= 80;
         
         // Set environment section height
         RectTransform envRect = environmentSection.GetComponent<RectTransform>();
@@ -2048,5 +2164,502 @@ public class SpirographUIManager : MonoBehaviour
         }
         
         Debug.Log("✓ Pattern generator UI connected!");
+    }
+    
+    /// <summary>
+    /// Create a modern toggle (checkbox) control
+    /// </summary>
+    Toggle CreateModernToggle(Transform parent, string name, Vector2 position, string labelText)
+    {
+        // Container
+        GameObject toggleObj = new GameObject(name);
+        toggleObj.transform.SetParent(parent, false);
+        RectTransform toggleRect = toggleObj.AddComponent<RectTransform>();
+        toggleRect.anchorMin = new Vector2(0, 1);
+        toggleRect.anchorMax = new Vector2(0, 1);
+        toggleRect.pivot = new Vector2(0, 1);
+        toggleRect.anchoredPosition = position;
+        toggleRect.sizeDelta = new Vector2(290, 35);
+        
+        // Background
+        GameObject bgObj = new GameObject("Background");
+        bgObj.transform.SetParent(toggleObj.transform, false);
+        RectTransform bgRect = bgObj.AddComponent<RectTransform>();
+        bgRect.anchorMin = Vector2.zero;
+        bgRect.anchorMax = new Vector2(0, 1);
+        bgRect.pivot = new Vector2(0, 0.5f);
+        bgRect.anchoredPosition = Vector2.zero;
+        bgRect.sizeDelta = new Vector2(30, 0);
+        
+        Image bgImage = bgObj.AddComponent<Image>();
+        bgImage.color = new Color(0.1f, 0.15f, 0.25f, 0.6f);
+        
+        Outline bgOutline = bgObj.AddComponent<Outline>();
+        bgOutline.effectColor = new Color(0.3f, 0.5f, 0.8f, 0.4f);
+        bgOutline.effectDistance = new Vector2(1, -1);
+        
+        // Checkmark
+        GameObject checkmarkObj = new GameObject("Checkmark");
+        checkmarkObj.transform.SetParent(bgObj.transform, false);
+        RectTransform checkmarkRect = checkmarkObj.AddComponent<RectTransform>();
+        checkmarkRect.anchorMin = Vector2.zero;
+        checkmarkRect.anchorMax = Vector2.one;
+        checkmarkRect.sizeDelta = Vector2.zero;
+        
+        Text checkmark = checkmarkObj.AddComponent<Text>();
+        checkmark.text = "✓";
+        checkmark.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+        checkmark.fontSize = 22;
+        checkmark.fontStyle = FontStyle.Bold;
+        checkmark.color = new Color(0.3f, 0.8f, 1f, 1f);
+        checkmark.alignment = TextAnchor.MiddleCenter;
+        
+        // Label
+        GameObject labelObj = new GameObject("Label");
+        labelObj.transform.SetParent(toggleObj.transform, false);
+        RectTransform labelRect = labelObj.AddComponent<RectTransform>();
+        labelRect.anchorMin = new Vector2(0, 0);
+        labelRect.anchorMax = new Vector2(1, 1);
+        labelRect.pivot = new Vector2(0, 0.5f);
+        labelRect.anchoredPosition = new Vector2(38, 0);
+        labelRect.sizeDelta = new Vector2(-38, 0);
+        
+        Text label = labelObj.AddComponent<Text>();
+        label.text = labelText;
+        label.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+        label.fontSize = 12;
+        label.fontStyle = FontStyle.Bold;
+        label.color = new Color(0.7f, 0.85f, 1f, 0.9f);
+        label.alignment = TextAnchor.MiddleLeft;
+        
+        // Toggle component
+        Toggle toggle = toggleObj.AddComponent<Toggle>();
+        toggle.targetGraphic = bgImage;
+        toggle.graphic = checkmark;
+        toggle.isOn = false;
+        
+        ColorBlock colors = toggle.colors;
+        colors.normalColor = Color.white;
+        colors.highlightedColor = new Color(1.1f, 1.1f, 1.2f, 1f);
+        colors.pressedColor = new Color(0.9f, 0.9f, 1f, 1f);
+        colors.selectedColor = new Color(1.1f, 1.1f, 1.2f, 1f);
+        toggle.colors = colors;
+        
+        return toggle;
+    }
+    
+    /// <summary>
+    /// Create a compact dropdown (smaller than the default modern dropdown)
+    /// </summary>
+    Dropdown CreateCompactDropdown(Transform parent, string name, Vector2 position, string[] options)
+    {
+        GameObject dropdownObj = new GameObject(name);
+        dropdownObj.transform.SetParent(parent, false);
+        RectTransform dropdownRect = dropdownObj.AddComponent<RectTransform>();
+        dropdownRect.anchorMin = new Vector2(0, 1);
+        dropdownRect.anchorMax = new Vector2(0, 1);
+        dropdownRect.pivot = new Vector2(0, 1);
+        dropdownRect.anchoredPosition = position;
+        dropdownRect.sizeDelta = new Vector2(290, 32);
+        
+        Image dropdownBg = dropdownObj.AddComponent<Image>();
+        dropdownBg.color = new Color(0.08f, 0.12f, 0.22f, 0.7f);
+        dropdownBg.raycastTarget = true;
+        
+        Outline dropdownOutline = dropdownObj.AddComponent<Outline>();
+        dropdownOutline.effectColor = new Color(0.3f, 0.5f, 0.8f, 0.4f);
+        dropdownOutline.effectDistance = new Vector2(1, -1);
+        
+        Dropdown dropdown = dropdownObj.AddComponent<Dropdown>();
+        dropdown.targetGraphic = dropdownBg;
+        
+        // Label
+        GameObject labelObj = new GameObject("Label");
+        labelObj.transform.SetParent(dropdownObj.transform, false);
+        RectTransform labelRect = labelObj.AddComponent<RectTransform>();
+        labelRect.anchorMin = Vector2.zero;
+        labelRect.anchorMax = Vector2.one;
+        labelRect.offsetMin = new Vector2(8, 2);
+        labelRect.offsetMax = new Vector2(-25, -2);
+        Text labelText = labelObj.AddComponent<Text>();
+        labelText.text = options[0];
+        labelText.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+        labelText.fontSize = 11;
+        labelText.fontStyle = FontStyle.Bold;
+        labelText.color = new Color(0.85f, 0.95f, 1f, 0.95f);
+        labelText.alignment = TextAnchor.MiddleLeft;
+        dropdown.captionText = labelText;
+        
+        // Arrow
+        GameObject arrowObj = new GameObject("Arrow");
+        arrowObj.transform.SetParent(dropdownObj.transform, false);
+        RectTransform arrowRect = arrowObj.AddComponent<RectTransform>();
+        arrowRect.anchorMin = new Vector2(1, 0);
+        arrowRect.anchorMax = new Vector2(1, 1);
+        arrowRect.offsetMin = new Vector2(-20, 0);
+        arrowRect.offsetMax = new Vector2(-4, 0);
+        Text arrowText = arrowObj.AddComponent<Text>();
+        arrowText.text = "▼";
+        arrowText.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+        arrowText.fontSize = 10;
+        arrowText.color = new Color(0.6f, 0.8f, 1f, 0.8f);
+        arrowText.alignment = TextAnchor.MiddleCenter;
+        
+        // Template (same as modern dropdown but positioned to the right)
+        GameObject templateObj = new GameObject("Template");
+        templateObj.transform.SetParent(dropdownObj.transform, false);
+        RectTransform templateRect = templateObj.AddComponent<RectTransform>();
+        templateRect.anchorMin = new Vector2(1, 0.5f);
+        templateRect.anchorMax = new Vector2(1, 0.5f);
+        templateRect.pivot = new Vector2(0, 0.5f);
+        templateRect.anchoredPosition = new Vector2(10, 0);
+        templateRect.sizeDelta = new Vector2(200, 150);
+        
+        Image templateBg = templateObj.AddComponent<Image>();
+        templateBg.color = new Color(0.05f, 0.08f, 0.15f, 0.95f);
+        templateBg.raycastTarget = true;
+        
+        Canvas templateCanvas = templateObj.AddComponent<Canvas>();
+        templateCanvas.overrideSorting = true;
+        templateCanvas.sortingOrder = 1000;
+        
+        CanvasGroup templateGroup = templateObj.AddComponent<CanvasGroup>();
+        templateGroup.blocksRaycasts = true;
+        
+        templateObj.AddComponent<GraphicRaycaster>();
+        
+        Outline templateOutline = templateObj.AddComponent<Outline>();
+        templateOutline.effectColor = new Color(0.3f, 0.5f, 0.8f, 0.5f);
+        templateOutline.effectDistance = new Vector2(2, -2);
+        
+        ScrollRect scrollRect = templateObj.AddComponent<ScrollRect>();
+        scrollRect.horizontal = false;
+        scrollRect.vertical = true;
+        scrollRect.scrollSensitivity = 10;
+        
+        // Viewport
+        GameObject viewportObj = new GameObject("Viewport");
+        viewportObj.transform.SetParent(templateObj.transform, false);
+        RectTransform viewportRect = viewportObj.AddComponent<RectTransform>();
+        viewportRect.anchorMin = Vector2.zero;
+        viewportRect.anchorMax = Vector2.one;
+        viewportRect.sizeDelta = Vector2.zero;
+        
+        Image viewportMask = viewportObj.AddComponent<Image>();
+        viewportMask.color = Color.white;
+        Mask mask = viewportObj.AddComponent<Mask>();
+        mask.showMaskGraphic = false;
+        
+        scrollRect.viewport = viewportRect;
+        
+        // Content
+        GameObject contentObj = new GameObject("Content");
+        contentObj.transform.SetParent(viewportObj.transform, false);
+        RectTransform contentRect = contentObj.AddComponent<RectTransform>();
+        contentRect.anchorMin = new Vector2(0, 1);
+        contentRect.anchorMax = new Vector2(1, 1);
+        contentRect.pivot = new Vector2(0.5f, 1);
+        contentRect.anchoredPosition = Vector2.zero;
+        contentRect.sizeDelta = new Vector2(0, 100);
+        
+        scrollRect.content = contentRect;
+        
+        // Item
+        GameObject itemObj = new GameObject("Item");
+        itemObj.transform.SetParent(contentObj.transform, false);
+        RectTransform itemRect = itemObj.AddComponent<RectTransform>();
+        itemRect.anchorMin = new Vector2(0, 1);
+        itemRect.anchorMax = new Vector2(1, 1);
+        itemRect.pivot = new Vector2(0.5f, 1);
+        itemRect.anchoredPosition = Vector2.zero;
+        itemRect.sizeDelta = new Vector2(0, 25);
+        
+        Toggle itemToggle = itemObj.AddComponent<Toggle>();
+        itemToggle.isOn = false;
+        itemToggle.interactable = true;
+        
+        Image itemBg = itemObj.AddComponent<Image>();
+        itemBg.color = new Color(0.1f, 0.15f, 0.25f, 1f);
+        itemBg.raycastTarget = true;
+        itemToggle.targetGraphic = itemBg;
+        
+        ColorBlock toggleColors = itemToggle.colors;
+        toggleColors.normalColor = new Color(1f, 1f, 1f, 1f);
+        toggleColors.highlightedColor = new Color(0.8f, 0.95f, 1f, 1f);
+        toggleColors.pressedColor = new Color(0.6f, 0.8f, 1f, 1f);
+        toggleColors.selectedColor = new Color(0.4f, 0.7f, 1f, 1f);
+        itemToggle.colors = toggleColors;
+        
+        // Item Label
+        GameObject itemLabelObj = new GameObject("Item Label");
+        itemLabelObj.transform.SetParent(itemObj.transform, false);
+        RectTransform itemLabelRect = itemLabelObj.AddComponent<RectTransform>();
+        itemLabelRect.anchorMin = Vector2.zero;
+        itemLabelRect.anchorMax = Vector2.one;
+        itemLabelRect.offsetMin = new Vector2(8, 1);
+        itemLabelRect.offsetMax = new Vector2(-8, -1);
+        Text itemLabelText = itemLabelObj.AddComponent<Text>();
+        itemLabelText.text = "Option";
+        itemLabelText.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+        itemLabelText.fontSize = 11;
+        itemLabelText.color = new Color(0.85f, 0.95f, 1f, 0.95f);
+        itemLabelText.alignment = TextAnchor.MiddleLeft;
+        dropdown.itemText = itemLabelText;
+        
+        dropdown.template = templateRect;
+        templateObj.SetActive(false);
+        
+        // Populate options
+        dropdown.ClearOptions();
+        dropdown.AddOptions(new List<string>(options));
+        
+        return dropdown;
+    }
+    
+    /// <summary>
+    /// Connect multi-agent UI to MultiAgentManager
+    /// </summary>
+    void ConnectMultiAgentSystem()
+    {
+        // Find or create MultiAgentManager
+        multiAgentManager = FindFirstObjectByType<MultiAgentManager>();
+        if (multiAgentManager == null)
+        {
+            GameObject managerObj = new GameObject("MultiAgentManager");
+            multiAgentManager = managerObj.AddComponent<MultiAgentManager>();
+            Debug.Log("✓ Created MultiAgentManager");
+        }
+        
+        // Find or create SharedPathState
+        sharedPathState = FindFirstObjectByType<SharedPathState>();
+        if (sharedPathState == null)
+        {
+            GameObject stateObj = new GameObject("SharedPathState");
+            sharedPathState = stateObj.AddComponent<SharedPathState>();
+            Debug.Log("✓ Created SharedPathState");
+        }
+        
+        // Link manager to shared state
+        multiAgentManager.sharedState = sharedPathState;
+        
+        // Connect Multi-Agent Toggle
+        if (multiAgentToggle != null)
+        {
+            multiAgentToggle.onValueChanged.RemoveAllListeners();
+            multiAgentToggle.onValueChanged.AddListener((isOn) => {
+                OnMultiAgentModeToggled(isOn);
+            });
+        }
+        
+        // Connect Agent Count Slider
+        if (agentCountSlider != null)
+        {
+            agentCountSlider.onValueChanged.RemoveAllListeners();
+            agentCountSlider.onValueChanged.AddListener((value) => {
+                int count = (int)value;
+                if (agentCountText != null)
+                {
+                    agentCountText.text = $"Agent Count: {count}";
+                }
+                if (multiAgentManager != null && multiAgentManager.isMultiAgentMode)
+                {
+                    multiAgentManager.SetAgentCount(count);
+                }
+            });
+        }
+        
+        // Connect Color Mode Dropdown
+        if (agentColorModeDropdown != null)
+        {
+            agentColorModeDropdown.onValueChanged.RemoveAllListeners();
+            agentColorModeDropdown.onValueChanged.AddListener((index) => {
+                if (multiAgentManager != null && multiAgentManager.isMultiAgentMode)
+                {
+                    multiAgentManager.SetColorMode((MultiAgentManager.AgentColorMode)index);
+                    Debug.Log($"Agent color mode: {(MultiAgentManager.AgentColorMode)index}");
+                }
+            });
+        }
+        
+        // Connect Spawn Mode Dropdown
+        if (agentSpawnModeDropdown != null)
+        {
+            agentSpawnModeDropdown.onValueChanged.RemoveAllListeners();
+            agentSpawnModeDropdown.onValueChanged.AddListener((index) => {
+                if (multiAgentManager != null && multiAgentManager.isMultiAgentMode)
+                {
+                    multiAgentManager.SetSpawnMode((MultiAgentManager.AgentSpawnMode)index);
+                    Debug.Log($"Agent spawn mode: {(MultiAgentManager.AgentSpawnMode)index}");
+                }
+            });
+        }
+        
+        // When multi-agent mode is enabled, connect sliders to SharedPathState
+        // This will be handled in OnMultiAgentModeToggled
+        
+        Debug.Log("✓ Multi-agent system UI connected!");
+    }
+    
+    /// <summary>
+    /// Handle multi-agent mode toggle
+    /// </summary>
+    void OnMultiAgentModeToggled(bool isEnabled)
+    {
+        Debug.Log($"Multi-Agent Mode: {(isEnabled ? "ENABLED" : "DISABLED")}");
+        
+        // Show/hide multi-agent controls
+        GameObject agentCountContainer = GameObject.Find("AgentCountContainer");
+        GameObject colorModeContainer = GameObject.Find("ColorModeContainer");
+        GameObject spawnModeContainer = GameObject.Find("SpawnModeContainer");
+        
+        if (agentCountContainer != null) agentCountContainer.SetActive(isEnabled);
+        if (colorModeContainer != null) colorModeContainer.SetActive(isEnabled);
+        if (spawnModeContainer != null) spawnModeContainer.SetActive(isEnabled);
+        
+        if (isEnabled)
+        {
+            // Enable multi-agent mode
+            if (multiAgentManager != null)
+            {
+                // Setup shared path state with current pattern's path
+                PatternSpawner spawner = FindFirstObjectByType<PatternSpawner>();
+                if (spawner != null && spawner.activeRoller != null && spawner.activeRoller.pathPoints != null)
+                {
+                    sharedPathState.pathPoints = spawner.activeRoller.pathPoints;
+                    
+                    // Copy current settings from active rotor to shared state
+                    sharedPathState.masterSpeed = spawner.activeRoller.speed;
+                    sharedPathState.masterRotationSpeed = spawner.activeRoller.rotationSpeed;
+                    sharedPathState.masterPenDistance = spawner.activeRoller.penDistance;
+                    sharedPathState.masterCycles = spawner.activeRoller.cycles;
+                    sharedPathState.masterLineWidth = spawner.activeRoller.lineWidth;
+                    sharedPathState.masterLineBrightness = spawner.activeRoller.lineBrightness;
+                    sharedPathState.masterLineColor = spawner.activeRoller.currentLineColor;
+                    
+                    Debug.Log("✓ Copied active rotor settings to SharedPathState");
+                }
+                
+                // Set agent count from slider
+                if (agentCountSlider != null)
+                {
+                    multiAgentManager.agentCount = (int)agentCountSlider.value;
+                }
+                
+                // Set color mode from dropdown
+                if (agentColorModeDropdown != null)
+                {
+                    multiAgentManager.colorMode = (MultiAgentManager.AgentColorMode)agentColorModeDropdown.value;
+                }
+                
+                // Set spawn mode from dropdown
+                if (agentSpawnModeDropdown != null)
+                {
+                    multiAgentManager.spawnMode = (MultiAgentManager.AgentSpawnMode)agentSpawnModeDropdown.value;
+                }
+                
+                multiAgentManager.EnableMultiAgentMode();
+            }
+            
+            // Redirect sliders to control SharedPathState instead of activeRoller
+            ConnectSlidersToSharedState();
+        }
+        else
+        {
+            // Disable multi-agent mode
+            if (multiAgentManager != null)
+            {
+                multiAgentManager.DisableMultiAgentMode();
+            }
+            
+            // Redirect sliders back to activeRoller
+            ConnectSlidersToActiveRotor();
+        }
+    }
+    
+    /// <summary>
+    /// Connect UI sliders to SharedPathState (for multi-agent mode)
+    /// </summary>
+    void ConnectSlidersToSharedState()
+    {
+        if (sharedPathState == null) return;
+        
+        // Speed Slider
+        if (speedSlider != null)
+        {
+            speedSlider.onValueChanged.RemoveAllListeners();
+            speedSlider.value = sharedPathState.masterSpeed;
+            speedSlider.onValueChanged.AddListener((value) => {
+                sharedPathState.masterSpeed = value;
+                if (speedText != null)
+                {
+                    speedText.text = "Travel Speed: " + value.ToString("F1") + " (ALL)";
+                }
+            });
+            // Update text to show it's controlling all agents
+            if (speedText != null)
+            {
+                speedText.text = "Travel Speed: " + sharedPathState.masterSpeed.ToString("F1") + " (ALL)";
+            }
+        }
+        
+        // Rotation Speed Slider
+        if (rotationSpeedSlider != null)
+        {
+            rotationSpeedSlider.onValueChanged.RemoveAllListeners();
+            rotationSpeedSlider.value = sharedPathState.masterRotationSpeed;
+            rotationSpeedSlider.onValueChanged.AddListener((value) => {
+                sharedPathState.masterRotationSpeed = value;
+            });
+        }
+        
+        // Pen Distance Slider
+        if (penDistanceSlider != null)
+        {
+            penDistanceSlider.onValueChanged.RemoveAllListeners();
+            penDistanceSlider.value = sharedPathState.masterPenDistance;
+            penDistanceSlider.onValueChanged.AddListener((value) => {
+                sharedPathState.masterPenDistance = value;
+            });
+        }
+        
+        // Cycles Slider
+        if (cyclesSlider != null)
+        {
+            cyclesSlider.onValueChanged.RemoveAllListeners();
+            cyclesSlider.value = sharedPathState.masterCycles;
+            cyclesSlider.onValueChanged.AddListener((value) => {
+                sharedPathState.masterCycles = (int)value;
+            });
+        }
+        
+        // Line Width Slider
+        if (lineWidthSlider != null)
+        {
+            lineWidthSlider.onValueChanged.RemoveAllListeners();
+            lineWidthSlider.value = sharedPathState.masterLineWidth;
+            lineWidthSlider.onValueChanged.AddListener((value) => {
+                sharedPathState.masterLineWidth = value;
+                // Update all agents
+                if (multiAgentManager != null)
+                {
+                    foreach (PathAgent agent in multiAgentManager.agents)
+                    {
+                        if (agent != null) agent.UpdateLineWidth(value);
+                    }
+                }
+            });
+        }
+        
+        // Line Brightness Slider
+        if (lineBrightnessSlider != null)
+        {
+            lineBrightnessSlider.onValueChanged.RemoveAllListeners();
+            lineBrightnessSlider.value = sharedPathState.masterLineBrightness;
+            lineBrightnessSlider.onValueChanged.AddListener((value) => {
+                sharedPathState.masterLineBrightness = value;
+            });
+        }
+        
+        Debug.Log("✓ Sliders now controlling SharedPathState (Multi-Agent Mode)");
     }
 }
